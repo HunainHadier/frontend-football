@@ -200,7 +200,7 @@ const AddPlayerStats = () => {
     {
       name: "matches",
       label: "Matches (M)",
-      desc: "Total number of matches played during a player's career.",
+      desc: "Total number of matches played in the present team.",
     },
     {
       name: "goals",
