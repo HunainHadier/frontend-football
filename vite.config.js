@@ -11,4 +11,10 @@ export default defineConfig({
       '@/hooks': '/src/hooks',
     },
   },
+  server: {
+    host: true, // allow external access
+    port: 5173,
+    strictPort: true,
+    allowedHosts: ['sportsassessor.com', 'localhost', '127.0.0.1'],
+  }
 })
