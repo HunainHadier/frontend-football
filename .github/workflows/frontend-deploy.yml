@@ -1,0 +1,56 @@
+name: Deploy Frontend Football
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Frontend to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup SSH (root user)
+        shell: bash
+        run: |
+          set -e
+
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_ID_RSA }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          ssh-keyscan -H 72.61.224.128 >> ~/.ssh/known_hosts
+
+      - name: Deploy Frontend via SSH
+        shell: bash
+        run: |
+          set -e
+
+          ssh -o StrictHostKeyChecking=yes root@72.61.224.128 << 'EOF'
+            echo "Starting frontend deployment..."
+
+            cd /root/frontend-football
+
+            echo "Pulling latest code..."
+            git pull origin main
+
+            echo "Installing dependencies..."
+            npm install -f
+
+            echo "Building frontend..."
+            npm run build
+
+            echo "Restarting PM2 frontend..."
+            pm2 restart frontend-football
+
+            echo "Saving PM2 state..."
+            pm2 save
+
+            echo "✅ Frontend deployment completed!"
+          EOF
