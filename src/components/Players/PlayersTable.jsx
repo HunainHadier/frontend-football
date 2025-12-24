@@ -34,6 +34,9 @@ const PlayersTable = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [sending, setSending] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [playerToDelete, setPlayerToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
 
   const [form, setForm] = useState({ name: "", age: "", email: "" });
@@ -165,59 +168,6 @@ const PlayersTable = () => {
   };
 
 
-  // const sendEvaluation = async (player_id = null) => {
-  //   const playerIds = player_id ? [player_id] : selectedPlayers;
-
-  //   if (playerIds.length === 0) {
-  //     return alert("Please select at least one player");
-  //   }
-
-  //   try {
-  //     setSending(true);   // <-- START LOADING
-
-  //     let result;
-
-  //     if (player_id) {
-  //       const res = await fetch(`${BASE_URL}/api/coach/players/send-evaluation`, {
-  //         method: "POST",
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({ player_id }),
-  //       });
-
-  //       result = await res.json();
-  //       if (!res.ok) throw new Error(result.message);
-
-  //       alert(`Evaluation email sent successfully to ${result.email}`);
-  //     } else {
-  //       const res = await fetch(`${BASE_URL}/api/coach/players/send-bulk-evaluation`, {
-  //         method: "POST",
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({ player_ids: playerIds }),
-  //       });
-
-  //       result = await res.json();
-  //       if (!res.ok) throw new Error(result.message);
-
-  //     }
-
-  //   } catch (err) {
-  //     alert("Error: " + err.message);
-  //   } finally {
-  //     setSending(false);  // <-- STOP LOADING
-  //   }
-  // };
-
-
-
-  // -------------------------
-  // CRUD MODAL
-  // -------------------------
 
   const sendEvaluation = async (player_id = null) => {
     const playerIds = player_id ? [player_id] : selectedPlayers;
@@ -475,6 +425,8 @@ const PlayersTable = () => {
                     icon: <FiEdit />,
                     onClick: () => openEditModal(p),
                   },
+
+                  { label: "Delete", icon: <FiTrash2 className="text-danger" />, onClick: () => openDeleteModal(p) },
                 ]
                 : []),
             ]}
@@ -484,6 +436,33 @@ const PlayersTable = () => {
     },
 
   ];
+
+  const openDeleteModal = (player) => {
+    setPlayerToDelete(player);
+    setDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!playerToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/coach/players/${playerToDelete.p_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete player");
+
+      topTost("Player deleted successfully");
+      setDeleteModal(false);
+      setPlayerToDelete(null);
+      fetchPlayers(); // Refresh list
+    } catch (err) {
+      topTost(err.message || "Error deleting player");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="container-fluid py-4">
@@ -587,6 +566,23 @@ const PlayersTable = () => {
           <Table data={filteredPlayers} columns={columns} loading={loading} />
         </div>
       </div>
+      {deleteModal && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ background: "rgba(0,0,0,0.5)", zIndex: 6000 }}>
+          <div className="bg-white p-4 rounded shadow-lg" style={{ width: 400 }}>
+            <div className="text-center mb-3">
+                <FiTrash2 size={50} className="text-danger mb-2" />
+                <h5 className="fw-bold">Confirm Delete</h5>
+                <p className="text-muted">Are you sure you want to delete <strong>{playerToDelete?.p_name}</strong>? This action cannot be undone.</p>
+            </div>
+            <div className="d-flex justify-content-center gap-3">
+              <button className="btn btn-light px-4" onClick={() => setDeleteModal(false)} disabled={deleting}>Cancel</button>
+              <button className="btn btn-danger px-4" onClick={handleDelete} disabled={deleting}>
+                {deleting ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ---------------- CREATE TEAM MODAL ---------------- */}
       {teamModal && (
